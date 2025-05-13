@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -23,7 +22,7 @@
     <div class="msg bot">안녕하세요! 평수와 예산을 입력하시면 예상 견적을 안내드릴게요.</div>
   </div>
   <div class="input-box">
-    <input id="userInput" placeholder="예: 30평 전체 리모델링 3000만 원"/>
+    <input id="userInput" placeholder="예: 30평 전체 리모델링 3천만 원"/>
     <button onclick="sendMessage()">보내기</button>
   </div>
 
@@ -36,20 +35,21 @@
       addMessage('user', text);
       input.value = '';
 
-      // 간단한 로직 예시
-      const match = text.match(/(\d+)[평]?[^\d]*(\d+)[만]?원?/);
+      // 숫자 추출 전 한글 단위 처리
+      let parsed = text.replace(/천/g, '000').replace(/억/g, '00000000').replace(/만/g, '0000').replace(/원/g, '');
+      const match = parsed.match(/(\d+)[^\d]*(\d+)/);
       if (!match) {
-        addMessage('bot', '평수와 예산을 숫자로 함께 입력해주세요! 예: 25평 2000만 원');
+        addMessage('bot', '평수와 예산을 숫자로 함께 입력해주세요! 예: 25평 3000만 원');
         return;
       }
 
       const pyeong = parseInt(match[1]);
       const budget = parseInt(match[2]);
-      const estimate = pyeong * 100;
-      const diff = budget - estimate;
+      const estimate = pyeong * 1000000;
+      const diff = budget * 10000 - estimate;
 
-      let reply = `📐 면적: ${pyeong}평\n💰 예산: ${budget}만 원\n예상 견적: 약 ${estimate}0,000원`;
-      reply += '\n' + (diff >= 0 ? '예산이 충분해요! 😊' : `예산이 ${Math.abs(diff)}만 원 부족해요 😢`);
+      let reply = `📐 면적: ${pyeong}평\n💰 예산: ${budget.toLocaleString()}원\n예상 견적: 약 ${estimate.toLocaleString()}원`;
+      reply += '\n' + (diff >= 0 ? '예산이 충분해요! 😊' : `예산이 ${Math.abs(diff).toLocaleString()}원 부족해요 😢`);
 
       addMessage('bot', reply);
     }
