@@ -2,32 +2,32 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Argen Studio 견적 챗봇</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Argen Studio AI 견적 챗봇</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 2rem; background: #f9f9f9; }
-    .chat-box { border: 1px solid #ccc; background: white; padding: 1rem; border-radius: 10px; height: 400px; overflow-y: auto; margin-bottom: 1rem; }
-    .msg { padding: 0.5rem 1rem; border-radius: 10px; margin: 0.5rem 0; }
-    .user { background: #d1e7ff; text-align: right; }
-    .bot { background: #eee; text-align: left; }
+    body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 2rem; background: #f3f3f3; }
+    .chat-box { background: #fff; padding: 1rem; border-radius: 8px; height: 400px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 1rem; }
+    .msg { padding: 0.5rem 1rem; border-radius: 10px; margin: 0.5rem 0; max-width: 90%; }
+    .user { background: #d1e7ff; text-align: right; margin-left: auto; }
+    .bot { background: #eee; text-align: left; margin-right: auto; }
     .input-box { display: flex; gap: 10px; }
     input { flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
     button { padding: 10px 20px; border: none; background: #3b82f6; color: white; border-radius: 5px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h2>Argen Studio 견적 상담 챗봇</h2>
+  <h2>Argen Studio AI 견적 챗봇</h2>
   <div class="chat-box" id="chatBox">
-    <div class="msg bot">안녕하세요! 평수와 예산을 입력하시면 예상 견적을 안내드릴게요.</div>
+    <div class="msg bot">안녕하세요! 평수, 공사 범위, 예산을 입력해주시면 자동 견적을 안내해드릴게요 😊</div>
   </div>
   <div class="input-box">
-    <input id="userInput" placeholder="예: 30평 전체 리모델링 3천만 원"/>
+    <input id="userInput" placeholder="예: 30평 도배, 바닥만 2000만 원 예산" />
     <button onclick="sendMessage()">보내기</button>
   </div>
 
   <script>
-    function sendMessage() {
+    async function sendMessage() {
       const input = document.getElementById('userInput');
       const text = input.value.trim();
       if (!text) return;
@@ -35,22 +35,30 @@
       addMessage('user', text);
       input.value = '';
 
-      // 숫자 추출 전 한글 단위 처리
-      let parsed = text.replace(/천/g, '000').replace(/억/g, '00000000').replace(/만/g, '0000').replace(/원/g, '');
-      const match = parsed.match(/(\d+)[^\d]*(\d+)/);
-      if (!match) {
-        addMessage('bot', '평수와 예산을 숫자로 함께 입력해주세요! 예: 25평 3000만 원');
-        return;
-      }
+      addMessage('bot', '🤖 답변 생성 중...');
 
-      const pyeong = parseInt(match[1]);
-      const budget = parseInt(match[2]);
-      const estimate = pyeong * 1000000;
-      const diff = budget * 10000 - estimate;
+      const messages = [
+        { role: "system", content: "당신은 인테리어 전문 브랜드 Argen Studio의 AI 견적 상담 비서입니다. 고객이 평수, 공사 범위, 예산을 말하면 항목별 예상 견적과 자재 추천을 제안하세요. 예산 초과 여부도 함께 말해주세요." },
+        { role: "user", content: text }
+      ];
 
-      let reply = `📐 면적: ${pyeong}평\n💰 예산: ${budget.toLocaleString()}원\n예상 견적: 약 ${estimate.toLocaleString()}원`;
-      reply += '\n' + (diff >= 0 ? '예산이 충분해요! 😊' : `예산이 ${Math.abs(diff).toLocaleString()}원 부족해요 😢`);
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer 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"
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: messages,
+          temperature: 0.7
+        })
+      });
 
+      const data = await response.json();
+      const reply = data.choices?.[0]?.message?.content || "죄송합니다. 응답을 가져오지 못했어요.";
+
+      document.querySelectorAll('.bot').pop()?.remove(); // remove "답변 생성 중..."
       addMessage('bot', reply);
     }
 
@@ -59,7 +67,7 @@
       div.className = 'msg ' + from;
       div.textContent = text;
       document.getElementById('chatBox').appendChild(div);
-      div.scrollIntoView({ behavior: 'smooth' });
+      div.scrollTop = div.scrollHeight;
     }
   </script>
 </body>
